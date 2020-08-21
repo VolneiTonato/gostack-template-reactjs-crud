@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 import Header from '../../components/Header';
 
@@ -25,45 +25,75 @@ const Dashboard: React.FC = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
 
-  useEffect(() => {
-    async function loadFoods(): Promise<void> {
-      // TODO LOAD FOODS
-    }
+  const loadFoods = useCallback(async () => {
+    const { data } = await api.get<IFoodPlate[]>('/foods');
 
-    loadFoods();
+    if (data) setFoods(data);
   }, []);
+
+  useEffect(() => {
+    loadFoods();
+  }, [loadFoods]);
 
   async function handleAddFood(
     food: Omit<IFoodPlate, 'id' | 'available'>,
   ): Promise<void> {
     try {
-      // TODO ADD A NEW FOOD PLATE TO THE API
+      const { data } = await api.post<IFoodPlate>('/foods', {
+        ...food,
+        available: true,
+      });
+
+      setFoods((currents: IFoodPlate[]) => [...currents, data]);
     } catch (err) {
-      console.log(err);
+      alert('Erro ao gravar cardápio');
     }
   }
 
-  async function handleUpdateFood(
-    food: Omit<IFoodPlate, 'id' | 'available'>,
-  ): Promise<void> {
-    // TODO UPDATE A FOOD PLATE ON THE API
-  }
+  const handleUpdateFood = useCallback(
+    async (food: Omit<IFoodPlate, 'id' | 'available'>) => {
+      try {
+        const { data } = await api.put<IFoodPlate>(`/foods/${editingFood.id}`, {
+          ...editingFood,
+          ...food,
+        });
+
+        setFoods(
+          foods.map(mappedFood =>
+            mappedFood.id === editingFood.id ? data : mappedFood,
+          ),
+        );
+      } catch (err) {
+        alert('Erro ao alterar cardápio');
+      }
+    },
+    [editingFood, foods],
+  );
 
   async function handleDeleteFood(id: number): Promise<void> {
-    // TODO DELETE A FOOD PLATE FROM THE API
+    try {
+      await api.delete(`/foods/${id}`);
+
+      const newFoods = foods.filter(food => food.id !== id);
+
+      setFoods(newFoods);
+    } catch (err) {
+      alert('Erro ao remover cardápio');
+    }
   }
 
-  function toggleModal(): void {
+  const toggleModal = useCallback(() => {
     setModalOpen(!modalOpen);
-  }
+  }, [modalOpen]);
 
-  function toggleEditModal(): void {
+  const toggleEditModal = useCallback(() => {
     setEditModalOpen(!editModalOpen);
-  }
+  }, [editModalOpen]);
 
-  function handleEditFood(food: IFoodPlate): void {
-    // TODO SET THE CURRENT EDITING FOOD ID IN THE STATE
-  }
+  const handleEditFood = useCallback((food: IFoodPlate) => {
+    setEditingFood(food);
+    toggleEditModal();
+  }, []);
 
   return (
     <>

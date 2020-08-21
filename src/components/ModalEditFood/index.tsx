@@ -5,6 +5,9 @@ import { FormHandles } from '@unform/core';
 import { Form } from './styles';
 import Modal from '../Modal';
 import Input from '../Input';
+import numberUtils from '../../utils/number';
+import formUtils from '../../utils/form';
+import * as Yup from 'yup';
 
 interface IFoodPlate {
   id: number;
@@ -37,9 +40,39 @@ const ModalEditFood: React.FC<IModalProps> = ({
 }) => {
   const formRef = useRef<FormHandles>(null);
 
+
+
   const handleSubmit = useCallback(
     async (data: IEditFoodData) => {
-      // EDIT A FOOD PLATE AND CLOSE THE MODAL
+      try {
+        formRef.current?.setErrors([]);
+        const schema = Yup.object().shape({
+          description: Yup.string().required('Descrição obrigatória'),
+          name: Yup.string().required('Nome obrigatório'),
+          image: Yup.string()
+            .required('Nome obrigatório')
+            .url('Link da imagem inválida!'),
+          price: Yup.string()
+            .required('Preço obrigatório')
+            .transform((value: string) => {
+              const newValue = numberUtils.numbers.onlyNumber(value);
+
+              if (!newValue || newValue <= 0.01) return '';
+
+              return value;
+            }),
+        });
+
+        await schema.validate(data, { abortEarly: false });
+
+        setIsOpen();
+
+        handleUpdateFood(data);
+      } catch (err) {
+        const errorsData = formUtils.yupValidationErros(err);
+
+        formRef.current?.setErrors(errorsData);
+      }
     },
     [handleUpdateFood, setIsOpen],
   );

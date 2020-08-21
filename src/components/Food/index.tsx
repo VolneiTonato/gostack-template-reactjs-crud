@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 
 import { FiEdit3, FiTrash } from 'react-icons/fi';
-
+import api from '../../services/api';
 import { Container } from './styles';
 
 interface IFoodPlate {
@@ -26,18 +26,27 @@ const Food: React.FC<IProps> = ({
 }: IProps) => {
   const [isAvailable, setIsAvailable] = useState(food.available);
 
-  async function toggleAvailable(): Promise<void> {
-    // TODO UPDATE STATUS (available)
-  }
+  const toggleAvailable = useCallback(async () => {
+    try {
+      await api.put(`/foods/${food.id}`, { ...food, available: !isAvailable });
+      setIsAvailable(!isAvailable);
+    } catch (err) {
+      alert('Erro ao alterar a disponibilidade do cardápio');
+    }
+  }, [isAvailable, food]);
 
-  function setEditingFood(): void {
-    // TODO - SET THE ID OF THE CURRENT ITEM TO THE EDITING FOOD AND OPEN MODAL
-  }
+  const setEditingFood = useCallback(() => {
+    handleEditFood(food);
+  }, [handleEditFood, food]);
+
+  const setDeletingFood = useCallback(() => {
+    handleDelete(food.id);
+  }, [handleDelete, food]);
 
   return (
     <Container available={isAvailable}>
       <header>
-        <img src={food.image} alt={food.name} />
+        <img src={food.image} width="352" alt={food.name} />
       </header>
       <section className="body">
         <h2>{food.name}</h2>
@@ -51,7 +60,7 @@ const Food: React.FC<IProps> = ({
           <button
             type="button"
             className="icon"
-            onClick={() => setEditingFood()}
+            onClick={setEditingFood}
             data-testid={`edit-food-${food.id}`}
           >
             <FiEdit3 size={20} />
@@ -60,7 +69,7 @@ const Food: React.FC<IProps> = ({
           <button
             type="button"
             className="icon"
-            onClick={() => handleDelete(food.id)}
+            onClick={setDeletingFood}
             data-testid={`remove-food-${food.id}`}
           >
             <FiTrash size={20} />
